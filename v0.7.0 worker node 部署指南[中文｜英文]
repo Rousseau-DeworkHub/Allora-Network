@@ -1,0 +1,322 @@
+## Allora Network v0.7.0 部署文档
+
+- 设备需求：
+    - 操作系统：ubuntu24.04
+    - 硬件配置：2 core 4G - 40 GB SSD
+- 前期预装：
+    - docker v27.3.1
+    - go v1.22.2
+    - jq
+
+### 开始
+
+1. 下载 allorad v0.7.0
+
+```bash
+curl -L -o allorad_linux_amd64 https://github.com/allora-network/allora-chain/releases/download/v0.7.0/allora-chain_0.7.0_linux_amd64
+```
+
+2. 修改 `allorad_linux_amd64` 文件权限并将其移入可执行路径中
+
+```bash
+chmod +x allorad_linux_amd64
+sudo mv allorad_linux_amd64 /usr/local/bin/allorad
+```
+
+3. 查询当前 allorad 版本，显示 `0.7.0` 则为成功
+
+```bash
+allorad version
+```
+
+4. 更新当前系统文件库并安装 go
+
+```bash
+sudo apt update && sudo apt upgrade
+sudo apt install golang-go
+```
+
+5. 配置必要服务并安装 docker，查询当前 docker 版本号 
+
+```bash
+apt-get install ca-certificates curl gnupg lsb-release
+
+curl -fsSL http://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg | sudo apt-key add -
+
+add-apt-repository "deb [arch=amd64] http://mirrors.aliyun.com/docker-ce/linux/ubuntu $(lsb_release -cs) stable"
+
+apt-get install docker-ce docker-ce-cli containerd.io
+
+systemctl start docker
+
+systemctl enable docker
+
+docker version
+```
+
+6. 安装 jq 以便于后续操作
+
+```bash
+sudo apt install jq 
+```
+
+7. 通过 git 下载官方 allora-offchain-node 并以此为例进行后续操作
+
+```bash
+git clone https://github.com/allora-network/allora-offchain-node
+
+cd allora-offchain-node
+
+git checkout v0.7.0
+```
+
+8. 通过 allorad 创建新钱包
+
+```bash
+allorad keys add < YOUR WALLET NAME >
+```
+
+> 如果你需要恢复之前的钱包，可以使用以下命令
+
+```bash
+allorad keys add < YOUR WALLET NAME > --recover
+```
+
+9. 复制 `config.example.json` 文件并修改名称为 `config.json` 并且开始进行 `config.json` 文件内容修改
+
+```bash
+cp config.example.json config.json
+
+vi config.json
+```
+
+
+`config.json` 文件内容
+```json
+{
+    "wallet": {
+      "addressKeyName": "YOUR WALLET NAME HERE",
+      "addressRestoreMnemonic": "YOUR MNEMONIC HERE",
+      "alloraHomeDir": "",
+      "gas": "auto",
+      "gasAdjustment": 2,
+      "gasPrices": "10",
+      "gasPriceUpdateInterval": 60,
+      "maxFees": 5000000,
+      "nodeRpc": "https://allora-rpc.testnet.allora.network",
+      "maxRetries": 5,
+      "retryDelay": 3,
+      "accountSequenceRetryDelay": 5,
+      "submitTx": true,
+      "blockDurationEstimated": 10,
+      "windowCorrectionFactor": 0.8
+    },
+    "worker": [
+      {
+        "topicId": 1,
+        "inferenceEntrypointName": "apiAdapter",
+        "parameters": {
+          "InferenceEndpoint": "http://source:8000/inference/{Token}",
+          "Token": "ETH"
+        }
+      }
+    ]
+}
+```
+
+10. 通过以下命令进行配置文件的初始化
+
+```bash
+./init.config
+```
+
+> 在启动之前，请确保你的钱包地址中有至少 50,000,000 单位的 uallo (1uallo = 100000000000000000 单位)，可以通过以下命令进行查询
+
+```bash
+allorad q bank balances YOUR_WALLET_ADDRESS --node https://allora-rpc.testnet.allora.network/
+```
+
+11. 启动 docker
+
+```bash
+docker compose up --build
+```
+
+等待一段时间后，控制台显示：
+
+```bash
+offchain_node    | {"level":"info","msg":"Register worker node","txHash":"ADFE36F7B0834D48FF7DC721033E7846838095AB0CF16A21C6115C4042381420","time":"2024-12-09T14:17:55Z","message":"Success"}
+```
+
+标志 worker node 成功了。
+
+12. 可以通过 nohup 的方式挂在后台，可以通过 `docker ps -a` 查询状态
+
+```bash
+nohup docker compose up --build > worker_node.log 2>&1 &
+```
+
+
+---
+
+## allora v0.7.0 worker node deploy report
+
+- Equipment Requirements:
+  - Operating System: Ubuntu 24.04
+  - Hardware Configuration: 2 cores, 4GB RAM - 40GB SSD
+- Pre-installation:
+    - docker v27.3.1
+    - go v1.22.2
+    - jq
+
+### Begin
+
+1. download allorad v0.7.0
+
+```bash
+curl -L -o allorad_linux_amd64 https://github.com/allora-network/allora-chain/releases/download/v0.7.0/allora-chain_0.7.0_linux_amd64
+```
+
+2. Modify the file permissions of `allorad_linux_amd64` and move it to an executable path.
+
+```bash
+chmod +x allorad_linux_amd64
+sudo mv allorad_linux_amd64 /usr/local/bin/allorad
+```
+
+3. To check the current version of `allorad` and confirm if it is `0.7.0` , you can use the following command:
+
+```bash
+allorad version
+```
+
+4. Update the current system libraries and install go
+
+```bash
+sudo apt update && sudo apt upgrade
+sudo apt install golang-go
+```
+
+5. Configure necessary services, install Docker, and check the current Docker version 
+
+```bash
+apt-get install ca-certificates curl gnupg lsb-release
+
+curl -fsSL http://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg | sudo apt-key add -
+
+add-apt-repository "deb [arch=amd64] http://mirrors.aliyun.com/docker-ce/linux/ubuntu $(lsb_release -cs) stable"
+
+apt-get install docker-ce docker-ce-cli containerd.io
+
+systemctl start docker
+
+systemctl enable docker
+
+docker version
+```
+
+6. Install jq to facilitate subsequent operations.
+
+```bash
+sudo apt install jq 
+```
+
+7. Download the official `allora-offchain-node` via git and use it as an example for subsequent operations.
+
+```bash
+git clone https://github.com/allora-network/allora-offchain-node
+
+cd allora-offchain-node
+
+git checkout v0.7.0
+```
+
+8. via `allorad` create a new wallet
+
+```bash
+allorad keys add < YOUR WALLET NAME >
+```
+
+> If you need to restore a previous wallet, you can use the following command.
+
+```bash
+allorad keys add < YOUR WALLET NAME > --recover
+```
+
+9. Copy the `config.example.json` file, rename it to `config.json` , and proceed to modify the contents of the `config.json` file.
+
+```bash
+cp config.example.json config.json
+
+vi config.json
+```
+
+
+`config.json` file content:
+```json
+{
+    "wallet": {
+      "addressKeyName": "YOUR WALLET NAME HERE",
+      "addressRestoreMnemonic": "YOUR MNEMONIC HERE",
+      "alloraHomeDir": "",
+      "gas": "auto",
+      "gasAdjustment": 2,
+      "gasPrices": "10",
+      "gasPriceUpdateInterval": 60,
+      "maxFees": 5000000,
+      "nodeRpc": "https://allora-rpc.testnet.allora.network",
+      "maxRetries": 5,
+      "retryDelay": 3,
+      "accountSequenceRetryDelay": 5,
+      "submitTx": true,
+      "blockDurationEstimated": 10,
+      "windowCorrectionFactor": 0.8
+    },
+    "worker": [
+      {
+        "topicId": 1,
+        "inferenceEntrypointName": "apiAdapter",
+        "parameters": {
+          "InferenceEndpoint": "http://source:8000/inference/{Token}",
+          "Token": "ETH"
+        }
+      }
+    ]
+}
+```
+
+10. Initialize the configuration file using the following command
+
+```bash
+./init.config
+```
+
+> Before starting, please ensure that you have at least 50,000,000 units of uallo (1 uallo = 100000000000000000 units) in your wallet address. You can check your balance using the following command.
+
+```bash
+allorad q bank balances YOUR_WALLET_ADDRESS --node https://allora-rpc.testnet.allora.network/
+```
+
+11. start docker
+
+```bash
+docker compose up --build
+```
+
+After waiting for a period of time, the console displays:
+
+```bash
+offchain_node    | {"level":"info","msg":"Register worker node","txHash":"ADFE36F7B0834D48FF7DC721033E7846838095AB0CF16A21C6115C4042381420","time":"2024-12-09T14:17:55Z","message":"Success"}
+```
+
+The worker node has been successfully flagged.
+
+12. It can be run in the background using nohup, and its status can be checked with `docker ps -a`.
+
+```bash
+nohup docker compose up --build > worker_node.log 2>&1 &
+```
+
+### Finally
+
+This report utilizes a basic model. The next report will employ a token prediction model for the analysis. Please stay tuned.
